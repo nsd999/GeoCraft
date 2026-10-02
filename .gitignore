@@ -1,0 +1,18 @@
+# Android / Gradle
+.gradle/
+build/
+**/build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# Generated
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Web
+node_modules/
+.next/
+.vercel/

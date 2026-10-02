@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d13">
+  <meta name="description" content="GeoForge — Android mock-location toolkit for development and QA.">
+  <title>GeoForge — Mock Location Toolkit</title>
+  <style>
+    :root{--bg:#090b10;--panel:rgba(20,23,32,.76);--line:rgba(255,255,255,.09);--text:#f8f9ff;--muted:#9aa1b2;--cyan:#56e0ff;--violet:#b76cff}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(circle at 50% -10%,#263064 0,#090b10 46%);display:grid;place-items:center;padding:24px}
+    .shell{width:min(840px,100%);padding:44px;border:1px solid var(--line);background:var(--panel);border-radius:30px;backdrop-filter:blur(18px);box-shadow:0 30px 100px rgba(0,0,0,.42)}
+    .logo{width:92px;height:92px;display:block;margin-bottom:28px}.eyebrow{display:inline-flex;padding:8px 12px;border:1px solid rgba(86,224,255,.35);color:var(--cyan);border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.08em}
+    h1{font-size:clamp(48px,9vw,82px);line-height:.92;letter-spacing:-.06em;margin:18px 0 16px}
+    p{max-width:650px;color:var(--muted);font-size:18px;line-height:1.65;margin:0}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}.card{padding:18px;border:1px solid var(--line);background:rgba(8,10,15,.48);border-radius:18px}.card b{display:block;margin-bottom:7px}.card span{color:var(--muted);font-size:14px;line-height:1.5}
+    .note{margin-top:25px;color:#777f94;font-size:13px}@media(max-width:680px){.shell{padding:28px}.cards{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <img class="logo" src="/public/geoforge.svg" alt="GeoForge">
+    <span class="eyebrow">ANDROID • DEVELOPER TOOLKIT</span>
+    <h1>GeoForge</h1>
+    <p>Controlled mock-location tooling for app development, QA, demos, and location-aware interface testing.</p>
+    <section class="cards">
+      <div class="card"><b>Mock points</b><span>Enter precise latitude and longitude coordinates.</span></div>
+      <div class="card"><b>Developer-first</b><span>Works with Android's standard mock-location framework.</span></div>
+      <div class="card"><b>Minimal UI</b><span>Focused controls with the GeoForge neon visual system.</span></div>
+    </section>
+    <div class="note">GeoForge does not provide anti-detection or stealth mechanisms.</div>
+  </main>
+</body>
+</html>
