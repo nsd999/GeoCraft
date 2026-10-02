@@ -22,7 +22,7 @@ Local Android Studio:
 
 ```bash
 cd android
-./gradlew assembleDebug
+gradle assembleDebug
 ```
 
 ## Web companion
