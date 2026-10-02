@@ -1,4 +1,4 @@
-package com.nsd.geoforge
+package com.nsd.geocraft
 
 import android.content.Intent
 import android.location.Location
@@ -20,7 +20,7 @@ class MainActivity : android.app.Activity() {
     private lateinit var statusText: TextView
     private lateinit var locationManager: LocationManager
 
-    private val prefs by lazy { getSharedPreferences("geoforge", MODE_PRIVATE) }
+    private val prefs by lazy { getSharedPreferences("geocraft", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,14 +39,14 @@ class MainActivity : android.app.Activity() {
         }
 
         statusText = TextView(this).apply {
-            text = "Ready. Select GeoForge as your mock-location app in Developer Options."
+            text = "Ready. Select GeoCraft as your mock-location app in Developer Options."
             textSize = 14f
             setTextColor(0xFFAAB1C2.toInt())
             setPadding(0, 18, 0, 18)
         }
 
         val title = TextView(this).apply {
-            text = "GeoForge"
+            text = "GeoCraft"
             textSize = 34f
             gravity = Gravity.CENTER_HORIZONTAL
             setTextColor(0xFFF8F9FF.toInt())
@@ -79,7 +79,7 @@ class MainActivity : android.app.Activity() {
         }
 
         val note = TextView(this).apply {
-            text = "GeoForge uses Android's standard test-location provider. It does not hide mock status or bypass anti-spoofing checks."
+            text = "GeoCraft uses Android's standard test-location provider. It does not hide mock status or bypass anti-spoofing checks."
             textSize = 12f
             setTextColor(0xFF7D859A.toInt())
             setPadding(0, 26, 0, 10)
@@ -145,8 +145,8 @@ class MainActivity : android.app.Activity() {
             statusText.text = "Mock location applied: %.6f, %.6f".format(Locale.US, lat, lon)
             Toast.makeText(this, "Mock location applied.", Toast.LENGTH_SHORT).show()
         } catch (e: SecurityException) {
-            statusText.text = "Android rejected the test provider. Select GeoForge in Developer Options, then try again."
-            Toast.makeText(this, "Select GeoForge as the mock-location app.", Toast.LENGTH_LONG).show()
+            statusText.text = "Android rejected the test provider. Select GeoCraft in Developer Options, then try again."
+            Toast.makeText(this, "Select GeoCraft as the mock-location app.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             statusText.text = "Could not apply location: ${e.message ?: "unknown error"}"
         }
