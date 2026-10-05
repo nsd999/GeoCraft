@@ -17,6 +17,7 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -36,6 +37,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_LOCATION = 101;
@@ -46,6 +49,8 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private SharedPreferences prefs;
     private WebView mapWebView;
+    private EditText placeSearchInput;
+    private Button placeSearchButton;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateCheckRunnable = this::checkForUpdates;
     private static final String UPDATE_MANIFEST_URL =
@@ -297,8 +302,39 @@ public class MainActivity extends Activity {
         TextView mapHelp = text("Tap anywhere on the map to select a location. The coordinates will fill automatically.", 12, Color.rgb(158, 163, 183), false);
         mapCard.addView(mapHelp, marginParams(-1, -2, 0, dp(4), 0, dp(10)));
 
-        mapWebView = new WebView(this);
+        LinearLayout searchRow = new LinearLayout(this);
+        searchRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        placeSearchInput = new EditText(this);
+        configureInput(placeSearchInput, "Search a place (e.g. Charminar)", "");
+        placeSearchInput.setSingleLine(true);
+        placeSearchInput.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        searchRow.addView(placeSearchInput, weightParams(0, 1));
+
+        Space searchSpace = new Space(this);
+        searchRow.addView(searchSpace, new LinearLayout.LayoutParams(dp(8), 1));
+
+        placeSearchButton = button("Search");
+        placeSearchButton.setTextSize(13);
+        placeSearchButton.setOnClickListener(v -> searchPlace());
+        searchRow.addView(placeSearchButton, new LinearLayout.LayoutParams(dp(105), dp(52)));
+
+        placeSearchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                searchPlace();
+                return true;
+            }
+            return false;
+        });
+
+        mapCard.addView(searchRow, marginParams(-1, dp(52), 0, 0, 0, dp(10)));
+
+        mapWebView = new MapWebView(this);
         mapWebView.setBackgroundColor(Color.rgb(20, 22, 30));
+        mapWebView.setVerticalScrollBarEnabled(false);
+        mapWebView.setHorizontalScrollBarEnabled(false);
+        mapWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        mapWebView.setNestedScrollingEnabled(false);
         WebSettings ws = mapWebView.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
@@ -409,11 +445,123 @@ public class MainActivity extends Activity {
         row.addView(b, new LinearLayout.LayoutParams(0, dp(48), 1));
     }
 
+    private class MapWebView extends WebView {
+        public MapWebView(android.content.Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                    break;
+            }
+            return super.onTouchEvent(event);
+        }
+    }
+
+    private void searchPlace() {
+        String query = placeSearchInput.getText().toString().trim();
+        if (query.isEmpty()) {
+            showError("Enter a place name, address, landmark or city to search.");
+            return;
+        }
+
+        placeSearchButton.setEnabled(false);
+        placeSearchButton.setText("Searching…");
+
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+                URL url = new URL("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=" + encoded);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestProperty("User-Agent", "GeoCraft/1.0 (com.nsd.geocraft)");
+
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    throw new Exception("Search service unavailable");
+                }
+
+                StringBuilder body = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) body.append(line);
+                }
+
+                org.json.JSONArray results = new org.json.JSONArray(body.toString());
+                runOnUiThread(() -> {
+                    placeSearchButton.setEnabled(true);
+                    placeSearchButton.setText("Search");
+
+                    if (results.length() == 0) {
+                        showError("No places found. Try a more specific place name or city.");
+                        return;
+                    }
+
+                    showSearchResults(results);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    placeSearchButton.setEnabled(true);
+                    placeSearchButton.setText("Search");
+                    showError("Couldn't search right now. Check your internet connection and try again.");
+                });
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private void showSearchResults(org.json.JSONArray results) {
+        String[] labels = new String[results.length()];
+        for (int i = 0; i < results.length(); i++) {
+            try {
+                labels[i] = results.getJSONObject(i).optString("display_name", "Result " + (i + 1));
+            } catch (Exception e) {
+                labels[i] = "Result " + (i + 1);
+            }
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Choose a place")
+                .setItems(labels, (dialog, which) -> {
+                    try {
+                        org.json.JSONObject result = results.getJSONObject(which);
+                        double lat = Double.parseDouble(result.getString("lat"));
+                        double lon = Double.parseDouble(result.getString("lon"));
+                        String name = result.optString("display_name", "Selected place");
+
+                        latInput.setText(String.format(java.util.Locale.US, "%.6f", lat));
+                        lonInput.setText(String.format(java.util.Locale.US, "%.6f", lon));
+                        prefs.edit().putFloat("lat", (float) lat).putFloat("lon", (float) lon).apply();
+
+                        mapWebView.evaluateJavascript(
+                                "setLocationFromSearch(" + lat + "," + lon + ");", null);
+                        statusText.setText(String.format(java.util.Locale.US,
+                                "Place selected: %.6f, %.6f", lat, lon));
+                        Toast.makeText(this, name, Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        showError("Could not use that search result.");
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void loadMap() {
         String html = "<!doctype html><html><head>" +
                 "<meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'>" +
                 "<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'>" +
-                "<style>html,body,#map{height:100%;margin:0;background:#14161e} .leaflet-control-attribution{font-size:9px}</style>" +
+                "<style>html,body,#map{height:100%;margin:0;background:#14161e;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none} #map{touch-action:none} .leaflet-control-attribution{font-size:9px}</style>" +
                 "</head><body><div id='map'></div>" +
                 "<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>" +
                 "<script>" +
