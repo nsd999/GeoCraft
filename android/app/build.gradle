@@ -21,17 +21,26 @@ android {
             def keyAlias = System.getenv("KEY_ALIAS")
             def keyPassword = System.getenv("KEY_PASSWORD")
 
-            storeFile file(keystorePath)
-            this.storePassword = storePassword
-            this.keyAlias = keyAlias
-            this.keyPassword = keyPassword
+            if (keystorePath && storePassword && keyAlias && keyPassword) {
+                storeFile file(keystorePath)
+                this.storePassword = storePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+
+            def hasReleaseKey =
+                    System.getenv("GEOCRAFT_KEYSTORE_PATH") &&
+                    System.getenv("KEYSTORE_PASSWORD") &&
+                    System.getenv("KEY_ALIAS") &&
+                    System.getenv("KEY_PASSWORD")
+
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
         }
     }
 
