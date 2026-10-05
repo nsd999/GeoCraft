@@ -3,12 +3,14 @@ package com.nsd.geocraft;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -158,18 +160,85 @@ public class MainActivity extends Activity {
 
     private void showUpdateDialog(String versionName, String apkUrl) {
         if (isFinishing()) return;
+
         new AlertDialog.Builder(this)
-                .setTitle("GeoCraft update available")
-                .setMessage("A newer GeoCraft build (" + versionName + ") is available. Your existing app can be upgraded without losing its data.")
-                .setPositiveButton("Update now", (d, w) -> {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)));
-                    } catch (Exception e) {
-                        Toast.makeText(this, "Unable to open the update download.", Toast.LENGTH_LONG).show();
-                    }
-                })
+                .setTitle("🚀 New GeoCraft update available")
+                .setMessage("GeoCraft " + versionName + " is ready.\n\nUpdate now to get the newest version. Your existing GeoCraft settings and saved locations will remain.")
+                .setPositiveButton("Update now", (d, w) -> downloadAndInstallUpdate(versionName, apkUrl))
                 .setNegativeButton("Later", null)
+                .setCancelable(false)
                 .show();
+    }
+
+    private void downloadAndInstallUpdate(String versionName, String apkUrl) {
+        try {
+            Uri uri = Uri.parse(apkUrl);
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle("GeoCraft " + versionName + " update");
+            request.setDescription("Downloading the latest GeoCraft APK…");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS,
+                    "GeoCraft-" + versionName + ".apk");
+            request.setMimeType("application/vnd.android.package-archive");
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(true);
+
+            DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            long downloadId = manager.enqueue(request);
+
+            Toast.makeText(this, "Downloading GeoCraft " + versionName + "…", Toast.LENGTH_LONG).show();
+
+            android.content.BroadcastReceiver receiver = new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(android.content.Context context, Intent intent) {
+                    if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())
+                            && intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) == downloadId) {
+                        try {
+                            android.database.Cursor cursor = manager.query(
+                                    new DownloadManager.Query().setFilterById(downloadId));
+                            if (cursor != null && cursor.moveToFirst()) {
+                                int status = cursor.getInt(cursor.getColumnIndexOrThrow(
+                                        DownloadManager.COLUMN_STATUS));
+                                if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                    Uri fileUri = manager.getUriForDownloadedFile(downloadId);
+                                    if (fileUri != null) {
+                                        Intent install = new Intent(Intent.ACTION_VIEW);
+                                        install.setDataAndType(fileUri, "application/vnd.android.package-archive");
+                                        install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                        install.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(install);
+                                    }
+                                } else {
+                                    Toast.makeText(MainActivity.this,
+                                            "GeoCraft update download failed. Please try again.",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            }
+                            if (cursor != null) cursor.close();
+                        } catch (Exception e) {
+                            Toast.makeText(MainActivity.this,
+                                    "Could not open the downloaded update.",
+                                    Toast.LENGTH_LONG).show();
+                        } finally {
+                            try { unregisterReceiver(this); } catch (Exception ignored) {}
+                        }
+                    }
+                }
+            };
+
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(receiver,
+                        new android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                        android.content.Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(receiver,
+                        new android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
+        } catch (Exception e) {
+            Toast.makeText(this,
+                    "Unable to start the update. Please use the download link manually.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void buildUi() {
