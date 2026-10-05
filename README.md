@@ -1,34 +1,43 @@
 # GeoCraft
 
-GeoCraft is a minimal Android mock-location toolkit for development, QA, demos, and location-aware UI testing.
+**GeoCraft** is a minimal Android mock-location toolkit for controlled QA, development and location-aware app testing.
 
-## What it does
+## Download
 
-- Lets you enter latitude and longitude.
-- Registers GeoCraft as a standard Android test-location provider.
-- Applies a mock GPS location when Android allows the app to act as the selected mock-location provider.
-- Includes a shortcut to Android Developer Options.
-- Remembers the last test coordinate locally.
+- **[Download GeoCraft v1.0.0 APK](https://github.com/nsd999/GeoCraft/releases/latest/download/GeoCraft-v1.0.0.apk)**
+- **[Open the landing website](https://geocraft.vercel.app)**
+- **[View the GitHub repository](https://github.com/nsd999/GeoCraft)**
+- **[View releases](https://github.com/nsd999/GeoCraft/releases)**
 
-## What it intentionally does not do
+## Features
 
-GeoCraft does not attempt to hide mock-location state, bypass anti-spoofing systems, forge telemetry, defeat security controls, or make a mock location indistinguishable from a genuine hardware/GNSS location.
+- Precise latitude/longitude target
+- Quick location presets
+- Foreground mock-location service
+- Optional floating control
+- Android-native mock-location workflow
+- Open-source Android implementation
+- Automated APK builds with GitHub Actions
 
-## Build
+## Setup
 
-The GitHub Actions workflow builds the debug APK on pushes to main and on version tags.
+1. Install the APK.
+2. Enable Android Developer Options.
+3. Set **GeoCraft** as the device's **Mock Location App**.
+4. Open GeoCraft and enter coordinates or select a preset.
+5. Start the mock-location service.
+6. Run your location-aware app and verify its behaviour.
 
-Local Android Studio:
+## Important
 
-```bash
-cd android
-gradle assembleDebug
-```
+Android exposes injected locations as mock locations. Applications can detect or reject mock locations. GeoCraft is intended for legitimate testing and does not attempt to bypass app anti-spoofing, integrity checks or other security controls.
 
-## Web companion
+## Project structure
 
-The root index.html is a small Vercel-ready landing page.
+- `android/` — Android application
+- `.github/workflows/` — automated Android build and release publishing
+- `index.html` — landing website
 
-## Branding
+## Licence
 
-GeoCraft uses the included neon eye/location mark in public/geoforge.svg and the matching Android vector launcher artwork.
+Add the project's preferred open-source licence before public redistribution if you want to define reuse terms.
