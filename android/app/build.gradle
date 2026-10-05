@@ -23,6 +23,7 @@ android {
 
             if (keystorePath && storePassword && keyAlias && keyPassword) {
                 storeFile file(keystorePath)
+                storeType "PKCS12"
                 this.storePassword = storePassword
                 this.keyAlias = keyAlias
                 this.keyPassword = keyPassword
