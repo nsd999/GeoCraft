@@ -14,10 +14,24 @@ android {
         versionName '1.0.1'
     }
 
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv("GEOCRAFT_KEYSTORE_PATH")
+            def storePassword = System.getenv("KEYSTORE_PASSWORD")
+            def keyAlias = System.getenv("KEY_ALIAS")
+            def keyPassword = System.getenv("KEY_PASSWORD")
+
+            storeFile file(keystorePath)
+            this.storePassword = storePassword
+            this.keyAlias = keyAlias
+            this.keyPassword = keyPassword
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 
