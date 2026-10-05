@@ -28,17 +28,37 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Use existing compatible debug signing for sideload updates
+      - name: Restore permanent signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "Building with the Android debug signing key so updates remain compatible with the existing v1.0.0 sideloaded APK."
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 GitHub secret is missing."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > geocraft-release.p12
+          test -s geocraft-release.p12
+
+      - name: Verify signing configuration
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_PASSWORD" || (echo "::error::KEYSTORE_PASSWORD GitHub secret is missing." && exit 1)
+          test -n "$KEY_ALIAS" || (echo "::error::KEY_ALIAS GitHub secret is missing." && exit 1)
+          test -n "$KEY_PASSWORD" || (echo "::error::KEY_PASSWORD GitHub secret is missing." && exit 1)
 
       - name: Build signed release APK
         working-directory: android
+        env:
+          GEOCRAFT_KEYSTORE_PATH: ${{ github.workspace }}/geocraft-release.p12
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle assembleRelease --stacktrace --no-daemon
 
       - name: Prepare update manifest
-        env:
-          VERSION_CODE: ${{ github.run_number }}
         run: |
           VERSION_NAME=$(grep "versionName" android/app/build.gradle | sed -E "s/.*versionName '([^']+)'.*/\1/")
           VERSION_CODE_REAL=$(grep "versionCode" android/app/build.gradle | sed -E "s/.*versionCode ([0-9]+).*/\1/")
@@ -58,4 +78,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v1.0.0 GeoCraft-v1.0.0.apk update.json             --repo "${{ github.repository }}"             --clobber
+          gh release upload v1.0.0 GeoCraft-v1.0.0.apk update.json --repo "${{ github.repository }}" --clobber
