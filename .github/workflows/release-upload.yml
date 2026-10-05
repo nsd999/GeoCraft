@@ -28,24 +28,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Restore permanent signing key
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Use existing compatible debug signing for sideload updates
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::KEYSTORE_BASE64 GitHub secret is missing."
-            exit 1
-          fi
-          echo "$KEYSTORE_BASE64" | base64 --decode > geocraft-release.jks
-          test -s geocraft-release.jks
+          echo "Building with the Android debug signing key so updates remain compatible with the existing v1.0.0 sideloaded APK."
 
       - name: Build signed release APK
         working-directory: android
-        env:
-          GEOCRAFT_KEYSTORE_PATH: ${{ github.workspace }}/geocraft-release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: gradle assembleRelease --stacktrace --no-daemon
 
       - name: Prepare update manifest
