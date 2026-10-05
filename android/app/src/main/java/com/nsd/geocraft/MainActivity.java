@@ -254,7 +254,7 @@ public class MainActivity extends Activity {
                 "</head><body><div id='map'></div>" +
                 "<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>" +
                 "<script>" +
-                "const savedLat=" + prefs.getFloat("lat",17.3850f) + ",savedLon=" + prefs.getFloat("lon",78.4867f);" +
+                "const savedLat=" + prefs.getFloat("lat",17.3850f) + ",savedLon=" + prefs.getFloat("lon",78.4867f) + ";" +
                 "const map=L.map('map').setView([savedLat,savedLon],13);" +
                 "L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);" +
                 "let marker=L.marker([savedLat,savedLon]).addTo(map);" +
