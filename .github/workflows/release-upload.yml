@@ -32,8 +32,13 @@ jobs:
         working-directory: android
         run: gradle assembleRelease --stacktrace --no-daemon
 
-      - name: Upload APK to v1.0.0 release
+      - name: Prepare branded APK filename
+        run: cp android/app/build/outputs/apk/release/app-release.apk GeoCraft-v1.0.0.apk
+
+      - name: Upload branded APK to v1.0.0 release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v1.0.0 android/app/build/outputs/apk/release/app-release.apk             --repo "${{ github.repository }}"             --clobber
+          gh release upload v1.0.0 GeoCraft-v1.0.0.apk \
+            --repo "${{ github.repository }}" \
+            --clobber
