@@ -1,34 +1,44 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0d13">
-  <meta name="description" content="GeoCraft — Android mock-location toolkit for development and QA.">
-  <title>GeoCraft — Mock Location Toolkit</title>
-  <style>
-    :root{--bg:#090b10;--panel:rgba(20,23,32,.76);--line:rgba(255,255,255,.09);--text:#f8f9ff;--muted:#9aa1b2;--cyan:#56e0ff;--violet:#b76cff}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(circle at 50% -10%,#263064 0,#090b10 46%);display:grid;place-items:center;padding:24px}
-    .shell{width:min(840px,100%);padding:44px;border:1px solid var(--line);background:var(--panel);border-radius:30px;backdrop-filter:blur(18px);box-shadow:0 30px 100px rgba(0,0,0,.42)}
-    .logo{width:92px;height:92px;display:block;margin-bottom:28px}.eyebrow{display:inline-flex;padding:8px 12px;border:1px solid rgba(86,224,255,.35);color:var(--cyan);border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.08em}
-    h1{font-size:clamp(48px,9vw,82px);line-height:.92;letter-spacing:-.06em;margin:18px 0 16px}
-    p{max-width:650px;color:var(--muted);font-size:18px;line-height:1.65;margin:0}
-    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}.card{padding:18px;border:1px solid var(--line);background:rgba(8,10,15,.48);border-radius:18px}.card b{display:block;margin-bottom:7px}.card span{color:var(--muted);font-size:14px;line-height:1.5}
-    .note{margin-top:25px;color:#777f94;font-size:13px}@media(max-width:680px){.shell{padding:28px}.cards{grid-template-columns:1fr}}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d0e14">
+<meta name="description" content="GeoCraft — a minimal Android mock-location testing toolkit for QA, development and location-aware app testing.">
+<title>GeoCraft — Mock Location Toolkit</title>
+<style>
+:root{--bg:#0d0e14;--surface:#151722;--surface2:#1c1f2d;--text:#f5f7ff;--muted:#9da4bb;--cyan:#47d8ff;--purple:#7c4dff;--violet:#b05cff;--line:rgba(255,255,255,.09);--glow:0 0 50px rgba(71,216,255,.12),0 0 100px rgba(124,77,255,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 50% -10%,rgba(124,77,255,.18),transparent 38%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6}a{color:inherit;text-decoration:none}.wrap{width:min(1120px,calc(100% - 40px));margin:auto}
+nav{position:fixed;z-index:20;top:14px;left:50%;transform:translateX(-50%);width:min(1060px,calc(100% - 28px));padding:10px 14px;border:1px solid var(--line);border-radius:18px;background:rgba(13,14,20,.72);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--glow)}.brand{display:flex;gap:10px;align-items:center;font-weight:800}.brand svg{width:34px;height:34px}.navlinks{display:flex;gap:20px;color:var(--muted);font-size:14px}.navlinks a:hover{color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid var(--line);border-radius:13px;padding:12px 17px;font-weight:750;font-size:14px;transition:.25s ease}.btn:hover{transform:translateY(-2px);border-color:rgba(71,216,255,.5);box-shadow:0 12px 30px rgba(0,0,0,.25)}.primary{border:0;background:linear-gradient(135deg,var(--cyan),#5e8cff 50%,var(--purple));color:#080910}.ghost{background:rgba(255,255,255,.035)}
+.hero{min-height:100vh;display:grid;place-items:center;text-align:center;padding:140px 0 90px;position:relative;overflow:hidden}.hero:before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:linear-gradient(135deg,rgba(71,216,255,.12),rgba(176,92,255,.15));filter:blur(50px);animation:pulse 7s ease-in-out infinite}.logo{width:190px;height:190px;position:relative;filter:drop-shadow(0 0 28px rgba(124,77,255,.32));animation:float 6s ease-in-out infinite}.eyebrow{display:inline-flex;margin-top:22px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);color:#c9ceff;font-size:12px}.hero h1{font-size:clamp(48px,8vw,92px);line-height:.98;letter-spacing:-.065em;margin:18px 0}.gradient{background:linear-gradient(90deg,#fff 5%,var(--cyan) 48%,#b88cff 95%);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:690px;margin:0 auto;color:var(--muted);font-size:18px}.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:30px}
+section{padding:100px 0}.section-head{max-width:700px;margin-bottom:38px}.kicker{color:var(--cyan);font-size:12px;text-transform:uppercase;letter-spacing:.18em;font-weight:800}.section-head h2{font-size:clamp(34px,5vw,56px);line-height:1.05;letter-spacing:-.045em;margin:9px 0 12px}.section-head p{color:var(--muted);margin:0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));border:1px solid var(--line);border-radius:22px;padding:25px;box-shadow:var(--glow)}.card .icon{font-size:25px;margin-bottom:16px}.card h3{margin:0 0 7px;font-size:18px}.card p{color:var(--muted);font-size:14px;margin:0}
+.demo{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.panel{border:1px solid var(--line);background:var(--surface);border-radius:26px;padding:30px;box-shadow:var(--glow)}.terminal{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfd5e8;font-size:13px;background:#090a0f;border:1px solid var(--line);border-radius:16px;padding:20px}.terminal span{color:var(--cyan)}.steps{display:grid;gap:12px}.step{display:flex;gap:14px;align-items:flex-start}.num{min-width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#080910;font-weight:900;font-size:13px}.step strong{display:block}.step small{color:var(--muted)}
+.release{display:flex;align-items:center;justify-content:space-between;gap:25px}.version{display:flex;align-items:center;gap:14px}.dot{width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 22px var(--cyan)}.release p{margin:4px 0 0;color:var(--muted);font-size:13px}.note{border-left:3px solid var(--violet);background:rgba(176,92,255,.06);border-radius:0 16px 16px 0;padding:16px 18px;color:#c9cce0;font-size:14px}
+footer{border-top:1px solid var(--line);padding:38px 0 50px;color:var(--muted);font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;align-items:center}.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease}.reveal.visible{opacity:1;transform:none}
+@keyframes float{50%{transform:translateY(-10px) rotate(1deg)}}@keyframes pulse{50%{transform:scale(1.12);opacity:.75}}
+@media(max-width:800px){.navlinks{display:none}.grid,.demo{grid-template-columns:1fr}.release{align-items:flex-start;flex-direction:column}.hero{padding-top:125px}.logo{width:150px;height:150px}.wrap{width:min(100% - 28px,1120px)}section{padding:75px 0}}
+</style>
 </head>
 <body>
-  <main class="shell">
-    <img class="logo" src="/geoforge.svg" alt="GeoCraft">
-    <span class="eyebrow">ANDROID • DEVELOPER TOOLKIT</span>
-    <h1>GeoCraft</h1>
-    <p>Controlled mock-location tooling for app development, QA, demos, and location-aware interface testing.</p>
-    <section class="cards">
-      <div class="card"><b>Mock points</b><span>Enter precise latitude and longitude coordinates.</span></div>
-      <div class="card"><b>Developer-first</b><span>Works with Android's standard mock-location framework.</span></div>
-      <div class="card"><b>Minimal UI</b><span>Focused controls with the GeoCraft neon visual system.</span></div>
-    </section>
-    <div class="note">GeoCraft does not provide anti-detection or stealth mechanisms.</div>
-  </main>
-</body>
-</html>
+<nav><a class="brand" href="#"><svg viewBox="0 0 256 256" aria-label="GeoCraft logo"><circle cx="128" cy="128" r="116" fill="#5b4bff"/><circle cx="128" cy="128" r="56" fill="#17171f"/><path d="M128 72 184 128 128 184 72 128Z" fill="none" stroke="#47d8ff" stroke-width="10"/><circle cx="128" cy="128" r="27" fill="#b05cff"/><path d="M120 114h16v28h-16zM114 120h28v16h-28zM122 30h12v30h-12zM122 196h12v30h-12zM30 122h30v12H30zM196 122h30v12h-30z" fill="#fff"/></svg>GeoCraft</a><div class="navlinks"><a href="#features">Features</a><a href="#how">How it works</a><a href="#release">Release</a></div><a class="btn primary" href="https://github.com/nsd999/GeoCraft/releases/latest/download/GeoCraft-v1.0.0.apk">Download APK</a></nav>
+<header class="hero"><div class="wrap reveal"><svg class="logo" viewBox="0 0 256 256" aria-label="GeoCraft"><circle cx="128" cy="128" r="116" fill="#5b4bff"/><circle cx="128" cy="128" r="56" fill="#17171f"/><path d="M128 72 184 128 128 184 72 128Z" fill="none" stroke="#47d8ff" stroke-width="10"/><circle cx="128" cy="128" r="27" fill="#b05cff"/><path d="M120 114h16v28h-16zM114 120h28v16h-28zM122 30h12v30h-12zM122 196h12v30h-12zM30 122h30v12H30zM196 122h30v12h-30z" fill="#fff"/></svg><div class="eyebrow">ANDROID • QA • LOCATION TESTING</div><h1>Build with location.<br><span class="gradient">Test without limits.</span></h1><p>GeoCraft is a minimal Android mock-location toolkit for developers and QA teams testing location-aware applications in controlled environments.</p><div class="actions"><a class="btn primary" href="https://github.com/nsd999/GeoCraft/releases/latest/download/GeoCraft-v1.0.0.apk">↓ Download GeoCraft APK</a><a class="btn ghost" href="https://github.com/nsd999/GeoCraft">View on GitHub ↗</a></div></div></header>
+<main>
+<section id="features"><div class="wrap"><div class="section-head reveal"><div class="kicker">What it does</div><h2>Small surface. Useful controls.</h2><p>Everything you need to set a controlled test location without turning the tool into a cluttered dashboard.</p></div><div class="grid">
+<article class="card reveal"><div class="icon">⌖</div><h3>Target coordinates</h3><p>Set precise latitude and longitude values and update the active test location.</p></article>
+<article class="card reveal"><div class="icon">✦</div><h3>Quick presets</h3><p>Jump to useful preset locations such as Hyderabad, Delhi and Mumbai while testing.</p></article>
+<article class="card reveal"><div class="icon">◉</div><h3>Foreground service</h3><p>Keep the mock location active while moving between apps with Android's foreground-service model.</p></article>
+<article class="card reveal"><div class="icon">↗</div><h3>Floating control</h3><p>Optional overlay control gives you a compact status and stop action over other apps.</p></article>
+<article class="card reveal"><div class="icon">⚙</div><h3>Android-native</h3><p>Uses Android's mock-location mechanism rather than attempting to hide injected locations.</p></article>
+<article class="card reveal"><div class="icon">⌁</div><h3>Open source</h3><p>Inspect the Android implementation, workflows and website directly in the GitHub repository.</p></article>
+</div></div></section>
+<section id="how"><div class="wrap"><div class="section-head reveal"><div class="kicker">Setup</div><h2>From install to test in minutes.</h2><p>GeoCraft intentionally keeps the workflow explicit so you know when Android is receiving a mock location.</p></div><div class="demo"><div class="panel reveal"><div class="terminal"><span>$</span> Install GeoCraft<br><span>$</span> Enable Developer Options<br><span>$</span> Select GeoCraft as Mock Location App<br><span>$</span> Choose coordinates<br><span>$</span> Start mock location<br><br><span>// GeoCraft → foreground service → Android LocationManager</span></div></div><div class="panel steps reveal">
+<div class="step"><div class="num">1</div><div><strong>Install the APK</strong><small>Download the latest release and install it on your Android device.</small></div></div>
+<div class="step"><div class="num">2</div><div><strong>Choose GeoCraft</strong><small>In Developer Options, select GeoCraft under the mock-location-app setting.</small></div></div>
+<div class="step"><div class="num">3</div><div><strong>Set a target</strong><small>Enter coordinates or choose a preset, then apply them.</small></div></div>
+<div class="step"><div class="num">4</div><div><strong>Start testing</strong><small>Start the foreground service and verify the location behaviour in your test app.</small></div></div>
+</div></div></div></section>
+<section id="release"><div class="wrap"><div class="section-head reveal"><div class="kicker">Latest release</div><h2>GeoCraft v1.0.0</h2><p>The first public Android build.</p></div><div class="panel release reveal"><div class="version"><div class="dot"></div><div><strong>GeoCraft-v1.0.0.apk</strong><p>Android APK • Release build</p></div></div><div class="actions" style="margin:0"><a class="btn primary" href="https://github.com/nsd999/GeoCraft/releases/latest/download/GeoCraft-v1.0.0.apk">Download</a><a class="btn ghost" href="https://github.com/nsd999/GeoCraft/releases/latest">Release notes</a></div></div><div class="note reveal" style="margin-top:18px"><strong>Important:</strong> Android marks injected locations as mock locations. Apps can detect or reject them. GeoCraft does not bypass anti-spoofing, integrity checks or app security controls.</div></div></section>
+</main>
+<footer><div class="wrap foot"><span>© 2026 GeoCraft • Open-source Android testing toolkit</span><a href="https://github.com/nsd999/GeoCraft">GitHub ↗</a></div></footer>
+<script>const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.12});document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));</script>
+</body></html>
