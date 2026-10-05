@@ -51,6 +51,12 @@ public class MainActivity extends Activity {
     private WebView mapWebView;
     private EditText placeSearchInput;
     private Button placeSearchButton;
+    private TextView updateStatusText;
+    private Button updateButton;
+    private boolean updateDialogShowing = false;
+    private boolean waitingForInstallPermission = false;
+    private String pendingApkUrl = "";
+    private String pendingVersionName = "";
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateCheckRunnable = this::checkForUpdates;
     private static final String UPDATE_MANIFEST_URL =
@@ -72,13 +78,33 @@ public class MainActivity extends Activity {
     }
 
     private Button button(String value) {
+        return styledButton(value, Color.rgb(86, 78, 220), Color.rgb(118, 110, 255));
+    }
+
+    private Button secondaryButton(String value) {
+        return styledButton(value, Color.rgb(36, 40, 58), Color.rgb(72, 78, 105));
+    }
+
+    private Button dangerButton(String value) {
+        return styledButton(value, Color.rgb(150, 52, 72), Color.rgb(205, 82, 108));
+    }
+
+    private Button styledButton(String value, int fill, int stroke) {
         Button b = new Button(this);
         b.setText(value);
         b.setAllCaps(false);
         b.setTextColor(Color.WHITE);
-        b.setTextSize(15);
-        b.setMinHeight(dp(48));
+        b.setTextSize(14);
+        b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        b.setMinHeight(dp(50));
         b.setPadding(dp(16), dp(8), dp(16), dp(8));
+        b.setGravity(Gravity.CENTER);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setColor(fill);
+        bg.setCornerRadius(dp(14));
+        bg.setStroke(dp(1), stroke);
+        b.setBackground(bg);
+        b.setElevation(dp(2));
         return b;
     }
 
@@ -105,6 +131,17 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (waitingForInstallPermission && Build.VERSION.SDK_INT >= 26
+                && getPackageManager().canRequestPackageInstalls()) {
+            waitingForInstallPermission = false;
+            String url = pendingApkUrl;
+            String name = pendingVersionName;
+            pendingApkUrl = "";
+            pendingVersionName = "";
+            if (!url.isEmpty()) downloadAndInstallUpdate(name, url);
+        }
+
         updateHandler.removeCallbacks(updateCheckRunnable);
         updateHandler.postDelayed(updateCheckRunnable, Long.parseLong(UPDATE_INTERVAL_MS));
     }
@@ -116,6 +153,12 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdates() {
+        if (updateStatusText != null) updateStatusText.setText("Checking for the latest version…");
+        if (updateButton != null) {
+            updateButton.setEnabled(false);
+            updateButton.setText("Checking…");
+        }
+
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
@@ -124,11 +167,13 @@ public class MainActivity extends Activity {
                 connection.setConnectTimeout(8000);
                 connection.setReadTimeout(8000);
                 connection.setRequestProperty("User-Agent", "GeoCraft-UpdateChecker");
-                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) return;
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    throw new Exception("Update server unavailable");
+                }
 
                 StringBuilder jsonText = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(connection.getInputStream()))) {
+                        new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) jsonText.append(line);
                 }
@@ -138,11 +183,34 @@ public class MainActivity extends Activity {
                 String latestName = manifest.optString("versionName", "");
                 String apkUrl = manifest.optString("apk", "");
 
-                if (latestCode > getCurrentVersionCode() && !apkUrl.isEmpty()) {
-                    runOnUiThread(() -> showUpdateDialog(latestName, apkUrl));
-                }
+                runOnUiThread(() -> {
+                    if (updateButton != null) {
+                        updateButton.setEnabled(true);
+                        updateButton.setText("Check for updates");
+                    }
+
+                    if (latestCode > getCurrentVersionCode() && !apkUrl.isEmpty()) {
+                        if (updateStatusText != null) {
+                            updateStatusText.setText("Update available • GeoCraft " + latestName);
+                        }
+                        showUpdateDialog(latestName, apkUrl);
+                    } else {
+                        if (updateStatusText != null) {
+                            updateStatusText.setText("You're up to date • GeoCraft " + getCurrentVersionName());
+                        }
+                        Toast.makeText(this, "GeoCraft is already up to date.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             } catch (Exception ignored) {
-                // Update checking is best-effort and must never interrupt normal app use.
+                runOnUiThread(() -> {
+                    if (updateButton != null) {
+                        updateButton.setEnabled(true);
+                        updateButton.setText("Check for updates");
+                    }
+                    if (updateStatusText != null) {
+                        updateStatusText.setText("Couldn't check right now • Tap to try again");
+                    }
+                });
             } finally {
                 if (connection != null) connection.disconnect();
             }
@@ -163,19 +231,55 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String getCurrentVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
     private void showUpdateDialog(String versionName, String apkUrl) {
-        if (isFinishing()) return;
+        if (isFinishing() || updateDialogShowing) return;
+        updateDialogShowing = true;
 
         new AlertDialog.Builder(this)
-                .setTitle("🚀 New GeoCraft update available")
-                .setMessage("GeoCraft " + versionName + " is ready.\n\nUpdate now to get the newest version. Your existing GeoCraft settings and saved locations will remain.")
-                .setPositiveButton("Update now", (d, w) -> downloadAndInstallUpdate(versionName, apkUrl))
-                .setNegativeButton("Later", null)
-                .setCancelable(false)
+                .setTitle("🚀 New GeoCraft update")
+                .setMessage("GeoCraft " + versionName + " is available.\n\nDownload and install the newest version now. Your saved locations and settings will remain.")
+                .setPositiveButton("Download & Install", (d, w) -> {
+                    updateDialogShowing = false;
+                    downloadAndInstallUpdate(versionName, apkUrl);
+                })
+                .setNegativeButton("Later", (d, w) -> updateDialogShowing = false)
+                .setOnDismissListener(d -> updateDialogShowing = false)
+                .setCancelable(true)
                 .show();
     }
 
     private void downloadAndInstallUpdate(String versionName, String apkUrl) {
+        if (Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+            pendingApkUrl = apkUrl;
+            pendingVersionName = versionName;
+            waitingForInstallPermission = true;
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Allow GeoCraft to install updates")
+                    .setMessage("Android needs one-time permission for GeoCraft to open downloaded APK updates. Turn on “Allow from this source”, then return to GeoCraft and the update will continue automatically.")
+                    .setPositiveButton("Open install permission", (d, w) -> {
+                        try {
+                            Intent settings = new Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:" + getPackageName()));
+                            startActivity(settings);
+                        } catch (Exception e) {
+                            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+                        }
+                    })
+                    .setNegativeButton("Cancel", (d, w) -> waitingForInstallPermission = false)
+                    .show();
+            return;
+        }
+
         try {
             Uri uri = Uri.parse(apkUrl);
             DownloadManager.Request request = new DownloadManager.Request(uri);
@@ -270,6 +374,10 @@ public class MainActivity extends Activity {
         subtitle.setPadding(dp(8), 0, dp(8), dp(10));
         root.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
 
+        TextView versionLabel = text("Version " + getCurrentVersionName(), 12, Color.rgb(118, 123, 143), false);
+        versionLabel.setGravity(Gravity.CENTER);
+        root.addView(versionLabel, new LinearLayout.LayoutParams(-1, dp(24)));
+
         LinearLayout statusCard = card();
         statusText = text("Ready — choose a target location.", 14, Color.rgb(244, 245, 251), true);
         statusCard.addView(statusText, new LinearLayout.LayoutParams(-1, dp(44)));
@@ -314,7 +422,7 @@ public class MainActivity extends Activity {
         Space searchSpace = new Space(this);
         searchRow.addView(searchSpace, new LinearLayout.LayoutParams(dp(8), 1));
 
-        placeSearchButton = button("Search");
+        placeSearchButton = secondaryButton("Search");
         placeSearchButton.setTextSize(13);
         placeSearchButton.setOnClickListener(v -> searchPlace());
         searchRow.addView(placeSearchButton, new LinearLayout.LayoutParams(dp(105), dp(52)));
@@ -343,10 +451,10 @@ public class MainActivity extends Activity {
         mapWebView.setWebViewClient(new WebViewClient());
         mapWebView.addJavascriptInterface(new MapBridge(), "Android");
         mapCard.addView(mapWebView, new LinearLayout.LayoutParams(-1, dp(300)));
-        Button useMap = button("Use selected map location");
+        Button useMap = secondaryButton("Use selected map location");
         useMap.setOnClickListener(v -> saveInputs());
         mapCard.addView(useMap, marginParams(-1, dp(52), 0, dp(10), 0, 0));
-        Button openMap = button("Open map in browser");
+        Button openMap = secondaryButton("Open map in browser");
         openMap.setOnClickListener(v -> {
             try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.openstreetmap.org"))); }
             catch (Exception ignored) {}
@@ -368,32 +476,40 @@ public class MainActivity extends Activity {
         pr.addView(s2, new LinearLayout.LayoutParams(dp(6), 1));
         addPreset(pr, "Mumbai", 19.0760, 72.8777);
         presets.addView(pr, marginParams(-1, dp(52), 0, dp(10), 0, 0));
-        Button apply = button("Apply coordinates");
+        Button apply = secondaryButton("Apply coordinates");
         apply.setOnClickListener(v -> saveInputs());
         presets.addView(apply);
         root.addView(presets, marginParams(-1, -2, 0, 0, 0, dp(14)));
+
+        LinearLayout updateCard = card();
+        TextView updateTitle = text("App updates", 17, Color.WHITE, true);
+        updateCard.addView(updateTitle);
+
+        updateStatusText = text("Checking for the latest version…", 12, Color.rgb(158, 163, 183), false);
+        updateCard.addView(updateStatusText, marginParams(-1, -2, 0, dp(5), 0, dp(10)));
+
+        updateButton = button("Check for updates");
+        updateButton.setOnClickListener(v -> checkForUpdates());
+        updateCard.addView(updateButton, new LinearLayout.LayoutParams(-1, dp(52)));
+        root.addView(updateCard, marginParams(-1, -2, 0, 0, 0, dp(14)));
 
         LinearLayout actions = card();
         TextView actionsTitle = text("Controls", 17, Color.WHITE, true);
         actions.addView(actionsTitle);
 
-        Button start = button("Start mock location");
+        Button start = button("▶  Start mock location");
         start.setOnClickListener(v -> startMock());
         actions.addView(start, marginParams(-1, dp(52), 0, dp(10), 0, 0));
 
-        Button stop = button("Stop mock location");
+        Button stop = dangerButton("Stop mock location");
         stop.setOnClickListener(v -> stopMock());
         actions.addView(stop, marginParams(-1, dp(52), 0, dp(10), 0, 0));
 
-        Button overlay = button("Enable / manage floating control");
+        Button overlay = secondaryButton("Enable / manage floating control");
         overlay.setOnClickListener(v -> openOverlaySettings());
         actions.addView(overlay, marginParams(-1, dp(52), 0, dp(10), 0, 0));
 
-        Button update = button("Check for updates");
-        update.setOnClickListener(v -> checkForUpdates());
-        actions.addView(update, marginParams(-1, dp(52), 0, dp(10), 0, 0));
-
-        Button developer = button("Open Android Mock Location settings");
+        Button developer = secondaryButton("Open Android Mock Location settings");
         developer.setOnClickListener(v -> openDeveloperOptions());
         actions.addView(developer, marginParams(-1, dp(52), 0, 0, 0, 0));
 
