@@ -23,6 +23,10 @@ import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_LOCATION = 101;
@@ -32,6 +36,7 @@ public class MainActivity extends Activity {
     private EditText lonInput;
     private TextView statusText;
     private SharedPreferences prefs;
+    private WebView mapWebView;
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
@@ -127,6 +132,34 @@ public class MainActivity extends Activity {
         locCard.addView(row);
         root.addView(locCard, marginParams(-1, -2, 0, 0, 0, dp(14)));
 
+        LinearLayout mapCard = card();
+        TextView mapTitle = text("Pick on map", 17, Color.WHITE, true);
+        mapCard.addView(mapTitle);
+        TextView mapHelp = text("Tap anywhere on the map to select a location. The coordinates will fill automatically.", 12, Color.rgb(158, 163, 183), false);
+        mapCard.addView(mapHelp, marginParams(-1, -2, 0, dp(4), 0, dp(10)));
+
+        mapWebView = new WebView(this);
+        mapWebView.setBackgroundColor(Color.rgb(20, 22, 30));
+        WebSettings ws = mapWebView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setBuiltInZoomControls(false);
+        ws.setDisplayZoomControls(false);
+        mapWebView.setWebViewClient(new WebViewClient());
+        mapWebView.addJavascriptInterface(new MapBridge(), "Android");
+        mapCard.addView(mapWebView, new LinearLayout.LayoutParams(-1, dp(300)));
+        Button useMap = button("Use selected map location");
+        useMap.setOnClickListener(v -> saveInputs());
+        mapCard.addView(useMap, marginParams(-1, dp(52), 0, dp(10), 0, 0));
+        Button openMap = button("Open map in browser");
+        openMap.setOnClickListener(v -> {
+            try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.openstreetmap.org"))); }
+            catch (Exception ignored) {}
+        });
+        mapCard.addView(openMap, marginParams(-1, dp(52), 0, 0, 0, 0));
+        root.addView(mapCard, marginParams(-1, -2, 0, 0, 0, dp(14)));
+        loadMap();
+
         LinearLayout presets = card();
         TextView presetsTitle = text("Quick presets", 17, Color.WHITE, true);
         presets.addView(presetsTitle);
@@ -211,6 +244,36 @@ public class MainActivity extends Activity {
             saveInputs();
         });
         row.addView(b, new LinearLayout.LayoutParams(0, dp(48), 1));
+    }
+
+    private void loadMap() {
+        String html = "<!doctype html><html><head>" +
+                "<meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'>" +
+                "<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'>" +
+                "<style>html,body,#map{height:100%;margin:0;background:#14161e} .leaflet-control-attribution{font-size:9px}</style>" +
+                "</head><body><div id='map'></div>" +
+                "<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>" +
+                "<script>" +
+                "const savedLat=" + prefs.getFloat("lat",17.3850f) + ",savedLon=" + prefs.getFloat("lon",78.4867f);" +
+                "const map=L.map('map').setView([savedLat,savedLon],13);" +
+                "L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);" +
+                "let marker=L.marker([savedLat,savedLon]).addTo(map);" +
+                "function pick(lat,lon){marker.setLatLng([lat,lon]);Android.selectLocation(lat,lon);}" +
+                "map.on('click',e=>pick(e.latlng.lat,e.latlng.lng));" +
+                "window.addEventListener('resize',()=>map.invalidateSize());" +
+                "</script></body></html>";
+        mapWebView.loadDataWithBaseURL("https://geocraft.local/", html, "text/html", "UTF-8", null);
+    }
+
+    private class MapBridge {
+        @JavascriptInterface
+        public void selectLocation(final double lat, final double lon) {
+            runOnUiThread(() -> {
+                latInput.setText(String.format(java.util.Locale.US, "%.6f", lat));
+                lonInput.setText(String.format(java.util.Locale.US, "%.6f", lon));
+                statusText.setText(String.format(java.util.Locale.US, "Map selected: %.6f, %.6f", lat, lon));
+            });
+        }
     }
 
     private void saveInputs() {
