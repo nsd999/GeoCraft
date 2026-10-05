@@ -27,6 +27,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.JavascriptInterface;
+import android.os.Handler;
+import android.os.Looper;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_LOCATION = 101;
@@ -37,6 +44,11 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private SharedPreferences prefs;
     private WebView mapWebView;
+    private final Handler updateHandler = new Handler(Looper.getMainLooper());
+    private final Runnable updateCheckRunnable = this::checkForUpdates;
+    private static final String UPDATE_MANIFEST_URL =
+            "https://github.com/nsd999/GeoCraft/releases/download/v1.0.0/update.json";
+    private static final String UPDATE_INTERVAL_MS = "1800000";
 
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
@@ -80,6 +92,84 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences("geocraft", MODE_PRIVATE);
         buildUi();
         requestPermissionsIfNeeded();
+        checkForUpdates();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateHandler.removeCallbacks(updateCheckRunnable);
+        updateHandler.postDelayed(updateCheckRunnable, Long.parseLong(UPDATE_INTERVAL_MS));
+    }
+
+    @Override
+    protected void onPause() {
+        updateHandler.removeCallbacks(updateCheckRunnable);
+        super.onPause();
+    }
+
+    private void checkForUpdates() {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(UPDATE_MANIFEST_URL);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestProperty("User-Agent", "GeoCraft-UpdateChecker");
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) return;
+
+                StringBuilder jsonText = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) jsonText.append(line);
+                }
+
+                JSONObject manifest = new JSONObject(jsonText.toString());
+                int latestCode = manifest.optInt("versionCode", 0);
+                String latestName = manifest.optString("versionName", "");
+                String apkUrl = manifest.optString("apk", "");
+
+                if (latestCode > getCurrentVersionCode() && !apkUrl.isEmpty()) {
+                    runOnUiThread(() -> showUpdateDialog(latestName, apkUrl));
+                }
+            } catch (Exception ignored) {
+                // Update checking is best-effort and must never interrupt normal app use.
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+
+        updateHandler.removeCallbacks(updateCheckRunnable);
+        updateHandler.postDelayed(updateCheckRunnable, Long.parseLong(UPDATE_INTERVAL_MS));
+    }
+
+    private int getCurrentVersionCode() {
+        try {
+            if (Build.VERSION.SDK_INT >= 28) {
+                return (int) getPackageManager().getPackageInfo(getPackageName(), 0).getLongVersionCode();
+            }
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void showUpdateDialog(String versionName, String apkUrl) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("GeoCraft update available")
+                .setMessage("A newer GeoCraft build (" + versionName + ") is available. Your existing app can be upgraded without losing its data.")
+                .setPositiveButton("Update now", (d, w) -> {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl)));
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Unable to open the update download.", Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton("Later", null)
+                .show();
     }
 
     private void buildUi() {
@@ -193,6 +283,10 @@ public class MainActivity extends Activity {
         Button overlay = button("Enable / manage floating control");
         overlay.setOnClickListener(v -> openOverlaySettings());
         actions.addView(overlay, marginParams(-1, dp(52), 0, dp(10), 0, 0));
+
+        Button update = button("Check for updates");
+        update.setOnClickListener(v -> checkForUpdates());
+        actions.addView(update, marginParams(-1, dp(52), 0, dp(10), 0, 0));
 
         Button developer = button("Open Android Mock Location settings");
         developer.setOnClickListener(v -> openDeveloperOptions());
