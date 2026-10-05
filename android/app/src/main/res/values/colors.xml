@@ -1,3 +1,10 @@
 <resources>
-    <color name="geoforge_bg">#0B0D13</color>
+    <color name="bg">#101117</color>
+    <color name="card">#171922</color>
+    <color name="card2">#1D2030</color>
+    <color name="accent_cyan">#47D8FF</color>
+    <color name="accent_purple">#7C4DFF</color>
+    <color name="text">#F4F5FB</color>
+    <color name="muted">#9EA3B7</color>
+    <color name="danger">#FF5C77</color>
 </resources>
