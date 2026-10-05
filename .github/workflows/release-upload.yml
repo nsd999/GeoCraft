@@ -1,0 +1,39 @@
+name: Publish GeoCraft APK
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/release-upload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build release APK
+        working-directory: android
+        run: gradle assembleRelease --stacktrace --no-daemon
+
+      - name: Upload APK to v1.0.0 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 android/app/build/outputs/apk/release/app-release.apk             --repo "${{ github.repository }}"             --clobber
