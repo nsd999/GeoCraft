@@ -5,7 +5,7 @@
 ## Download
 
 - **[Download GeoCraft v1.0.0 APK](https://github.com/nsd999/GeoCraft/releases/latest/download/GeoCraft-v1.0.0.apk)**
-- **[Open the landing website](https://geocraft.vercel.app)**
+- **[Open the landing website](https://geocraft-sigma.vercel.app)**
 - **[View the GitHub repository](https://github.com/nsd999/GeoCraft)**
 - **[View releases](https://github.com/nsd999/GeoCraft/releases)**
 
