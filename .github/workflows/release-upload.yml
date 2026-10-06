@@ -5,6 +5,7 @@ on:
     paths:
       - 'android/**'
       - '.github/workflows/release-upload.yml'
+      - 'CHANGELOG.json'
   workflow_dispatch:
 
 permissions:
@@ -62,14 +63,24 @@ jobs:
         run: |
           VERSION_NAME=$(grep "versionName" android/app/build.gradle | sed -E "s/.*versionName '([^']+)'.*/\1/")
           VERSION_CODE_REAL=$(grep "versionCode" android/app/build.gradle | sed -E "s/.*versionCode ([0-9]+).*/\1/")
-          cat > update.json <<EOF
-          {
-            "package": "com.nsd.geocraft",
-            "versionCode": $VERSION_CODE_REAL,
-            "versionName": "$VERSION_NAME",
-            "apk": "https://github.com/nsd999/GeoCraft/releases/download/v1.0.0/GeoCraft-v1.0.0.apk"
+          python3 - <<'PY'
+          import json
+
+          with open("CHANGELOG.json", "r", encoding="utf-8") as f:
+              changelog = json.load(f)
+
+          manifest = {
+              "package": "com.nsd.geocraft",
+              "versionCode": int("$VERSION_CODE_REAL"),
+              "versionName": "$VERSION_NAME",
+              "apk": "https://github.com/nsd999/GeoCraft/releases/download/v1.0.0/GeoCraft-v1.0.0.apk",
+              "changelog": changelog["releases"]
           }
-          EOF
+
+          with open("update.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+          PY
 
       - name: Prepare branded APK filename
         run: cp android/app/build/outputs/apk/release/app-release.apk GeoCraft-v1.0.0.apk
