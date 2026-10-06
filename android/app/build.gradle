@@ -17,16 +17,16 @@ android {
     signingConfigs {
         release {
             def keystorePath = System.getenv("GEOCRAFT_KEYSTORE_PATH")
-            def storePassword = System.getenv("KEYSTORE_PASSWORD")
-            def keyAlias = System.getenv("KEY_ALIAS")
-            def keyPassword = System.getenv("KEY_PASSWORD")
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD")
+            def ksAlias = System.getenv("KEY_ALIAS")
+            def ksKeyPassword = System.getenv("KEY_PASSWORD")
 
-            if (keystorePath && storePassword && keyAlias && keyPassword) {
+            if (keystorePath && ksPassword && ksAlias && ksKeyPassword) {
                 storeFile file(keystorePath)
                 storeType "PKCS12"
-                this.storePassword = storePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                storePassword ksPassword
+                keyAlias ksAlias
+                keyPassword ksKeyPassword
             }
         }
     }
