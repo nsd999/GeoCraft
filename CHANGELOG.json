@@ -1,0 +1,54 @@
+{
+  "releases": [
+    {
+      "versionCode": 4,
+      "versionName": "1.0.3",
+      "date": "2026-10-06",
+      "title": "Update system and release signing",
+      "changes": [
+        "Added automatic in-app update checking.",
+        "Added Download & Install update flow with Android package installer permission handling.",
+        "Added permanent release signing for reliable future APK updates.",
+        "Added GeoCraft mock-location registration for Android Developer Options.",
+        "Improved the release publishing workflow."
+      ]
+    },
+    {
+      "versionCode": 3,
+      "versionName": "1.0.2",
+      "date": "2026-10-05",
+      "title": "Place search and map improvements",
+      "changes": [
+        "Added place and landmark search using OpenStreetMap Nominatim.",
+        "Added search-result selection to populate coordinates.",
+        "Fixed map gestures being intercepted by the surrounding screen.",
+        "Improved map interaction and location selection."
+      ]
+    },
+    {
+      "versionCode": 2,
+      "versionName": "1.0.1",
+      "date": "2026-10-05",
+      "title": "Android release update",
+      "changes": [
+        "Updated the GeoCraft Android release version.",
+        "Improved release-build preparation for subsequent updates."
+      ]
+    },
+    {
+      "versionCode": 1,
+      "versionName": "1.0.0",
+      "date": "2026-10-05",
+      "title": "Initial public release",
+      "changes": [
+        "Initial GeoCraft Android release.",
+        "Set custom latitude and longitude test locations.",
+        "Added Hyderabad, Delhi and Mumbai quick presets.",
+        "Added foreground-service mock-location controls.",
+        "Added optional floating control.",
+        "Added Android Developer Options shortcut.",
+        "Added interactive OpenStreetMap location picker."
+      ]
+    }
+  ]
+}
