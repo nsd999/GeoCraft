@@ -63,16 +63,17 @@ jobs:
         run: |
           VERSION_NAME=$(grep "versionName" android/app/build.gradle | sed -E "s/.*versionName '([^']+)'.*/\1/")
           VERSION_CODE_REAL=$(grep "versionCode" android/app/build.gradle | sed -E "s/.*versionCode ([0-9]+).*/\1/")
+          export VERSION_CODE_REAL VERSION_NAME
           python3 - <<'PY'
-          import json
+          import json, os
 
           with open("CHANGELOG.json", "r", encoding="utf-8") as f:
               changelog = json.load(f)
 
           manifest = {
               "package": "com.nsd.geocraft",
-              "versionCode": int("$VERSION_CODE_REAL"),
-              "versionName": "$VERSION_NAME",
+              "versionCode": int(__import__("os").environ["VERSION_CODE_REAL"]),
+              "versionName": __import__("os").environ["VERSION_NAME"],
               "apk": "https://github.com/nsd999/GeoCraft/releases/download/v1.0.0/GeoCraft-v1.0.0.apk",
               "changelog": changelog["releases"]
           }
