@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private Button placeSearchButton;
     private TextView updateStatusText;
     private Button updateButton;
+    private Button changelogButton;
     private boolean updateDialogShowing = false;
     private boolean waitingForInstallPermission = false;
     private String pendingApkUrl = "";
@@ -179,6 +180,8 @@ public class MainActivity extends Activity {
                 }
 
                 JSONObject manifest = new JSONObject(jsonText.toString());
+                final String changelogJson = manifest.optJSONArray("changelog") != null
+                        ? manifest.optJSONArray("changelog").toString() : "[]";
                 int latestCode = manifest.optInt("versionCode", 0);
                 String latestName = manifest.optString("versionName", "");
                 String apkUrl = manifest.optString("apk", "");
@@ -187,6 +190,9 @@ public class MainActivity extends Activity {
                     if (updateButton != null) {
                         updateButton.setEnabled(true);
                         updateButton.setText("Check for updates");
+                    }
+                    if (changelogButton != null) {
+                        changelogButton.setEnabled(true);
                     }
 
                     if (latestCode > getCurrentVersionCode() && !apkUrl.isEmpty()) {
@@ -210,6 +216,9 @@ public class MainActivity extends Activity {
                     if (updateStatusText != null) {
                         updateStatusText.setText("Couldn't check right now • Tap to try again");
                     }
+                    if (changelogButton != null) {
+                        changelogButton.setEnabled(true);
+                    }
                 });
             } finally {
                 if (connection != null) connection.disconnect();
@@ -218,6 +227,102 @@ public class MainActivity extends Activity {
 
         updateHandler.removeCallbacks(updateCheckRunnable);
         updateHandler.postDelayed(updateCheckRunnable, Long.parseLong(UPDATE_INTERVAL_MS));
+    }
+
+    private void fetchAndShowChangelog() {
+        if (changelogButton != null) {
+            changelogButton.setEnabled(false);
+            changelogButton.setText("Loading changelog…");
+        }
+
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(UPDATE_MANIFEST_URL + "?t=" + System.currentTimeMillis());
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setUseCaches(false);
+                connection.setRequestProperty("Cache-Control", "no-cache");
+                connection.setRequestProperty("User-Agent", "GeoCraft-Changelog");
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    throw new Exception("Changelog unavailable");
+                }
+
+                StringBuilder jsonText = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) jsonText.append(line);
+                }
+
+                JSONObject manifest = new JSONObject(jsonText.toString());
+                org.json.JSONArray releases = manifest.optJSONArray("changelog");
+
+                runOnUiThread(() -> {
+                    if (changelogButton != null) {
+                        changelogButton.setEnabled(true);
+                        changelogButton.setText("View changelog");
+                    }
+                    showChangelogDialog(releases);
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    if (changelogButton != null) {
+                        changelogButton.setEnabled(true);
+                        changelogButton.setText("View changelog");
+                    }
+                    showError("Couldn't load the changelog right now. Check your internet connection and try again.");
+                });
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private void showChangelogDialog(org.json.JSONArray releases) {
+        if (releases == null || releases.length() == 0) {
+            showError("No changelog entries are available yet.");
+            return;
+        }
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(6), dp(2), dp(6), dp(2));
+
+        for (int i = 0; i < releases.length(); i++) {
+            try {
+                JSONObject release = releases.getJSONObject(i);
+                String version = release.optString("versionName", "Unknown");
+                String title = release.optString("title", "Update");
+                String date = release.optString("date", "");
+                TextView heading = text("GeoCraft v" + version + " — " + title, 16, Color.WHITE, true);
+                content.addView(heading, marginParams(-1, -2, 0, i == 0 ? 0 : dp(14), 0, dp(2)));
+
+                if (!date.isEmpty()) {
+                    TextView dateText = text(date, 11, Color.rgb(145, 150, 170), false);
+                    content.addView(dateText, marginParams(-1, -2, 0, 0, 0, dp(5)));
+                }
+
+                org.json.JSONArray changes = release.optJSONArray("changes");
+                if (changes != null) {
+                    for (int j = 0; j < changes.length(); j++) {
+                        TextView item = text("• " + changes.optString(j), 13, Color.rgb(205, 209, 225), false);
+                        content.addView(item, marginParams(-1, -2, dp(4), 0, 0, dp(3)));
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+
+        new AlertDialog.Builder(this)
+                .setTitle("GeoCraft Changelog")
+                .setView(scroll)
+                .setPositiveButton("Close", null)
+                .show();
     }
 
     private int getCurrentVersionCode() {
@@ -491,6 +596,10 @@ public class MainActivity extends Activity {
         updateButton = button("Check for updates");
         updateButton.setOnClickListener(v -> checkForUpdates());
         updateCard.addView(updateButton, new LinearLayout.LayoutParams(-1, dp(52)));
+
+        changelogButton = secondaryButton("View changelog");
+        changelogButton.setOnClickListener(v -> fetchAndShowChangelog());
+        updateCard.addView(changelogButton, marginParams(-1, dp(52), 0, dp(10), 0, 0));
         root.addView(updateCard, marginParams(-1, -2, 0, 0, 0, dp(14)));
 
         LinearLayout actions = card();
